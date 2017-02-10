@@ -1,4 +1,6 @@
 # ApkUpdater
+[![](https://jitpack.io/v/hss01248/ApkUpdater.svg)](https://jitpack.io/#hss01248/ApkUpdater)
+
 based on netWrapper ,封装apk更新的逻辑
 
 
