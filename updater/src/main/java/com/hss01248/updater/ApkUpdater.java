@@ -3,13 +3,13 @@ package com.hss01248.updater;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.provider.Settings;
 import android.text.TextUtils;
-import android.util.Log;
 import android.widget.Toast;
 
 import com.hss01248.dialog.StyledDialog;
@@ -27,6 +27,8 @@ import com.hss01248.net.wrapper.MyNetListener;
 
 public class ApkUpdater<T> {
 
+    private static final String CONFIG_FILE = "apkupdater";
+    private static final String VERSIONCODE = "vercode";
     private  Context context;
     private  String url;
     private  ObjectCopyable<T> copyable;
@@ -101,7 +103,7 @@ public class ApkUpdater<T> {
 
     /**
      *
-     * @param showLoadingInfo 是否显示"正在获取更新信息"
+     * @param showLoadingInfo 是否显示"正在获取更新信息",相当于是否手动点击
      * @param showAskDownload 是否询问用户"是否下载安装",如果为false,则直接下载
      * @param showProgressOrNotify  true:显示下载进度dialog,  false: 下载进度:显示notification
      */
@@ -112,46 +114,51 @@ public class ApkUpdater<T> {
         }
 
         builder.getAsync(new MyNetListener<T>() {
-
-
             @Override
             public void onSuccess(T bean, String s,boolean iscache) {
                 StyledDialog.dismissLoading();
                 UpdateInfo info = copyable.copyValues(bean);
-
                 int versionCode = getAPPVersionCodeFromAPP(context);
                 if(versionCode >=info.versionCode){
-                    if(!showLoadingInfo){
+                    if(showLoadingInfo){
                         toast("已经是最新版本");
                     }
                     return;
                 }
+                if(!showLoadingInfo && hasIgnored(info.versionCode)){
+                    //非手动点击,并且已经忽略此版本,则不再有任何提示
+                    return;
+                }
+
                 //有新版本
                 boolean isWifiConnected = isWifiConnected(context);
-
-                Log.e("dd","是不是wifi:"+isWifiConnected);
-
-
                 if(isWifiConnected){
-                    if( info.isForceUpdate || !showAskDownload){
-                        download(info,false);
-                    }else {
-                        showInfoDialog(info,showProgressOrNotify,isWifiConnected);
+                    if(showLoadingInfo){//如果是手动拉取,则
+                        showInfoDialog(info,true,isWifiConnected);
+                    }else {//如果是偷偷地拉更新信息,则强制更新会起作用
+                        if(info.isForceUpdate){
+                            download(info,false);
+                        }else {//如果不强制更新,则
+                            if( !showAskDownload){
+                                download(info,false);
+                            }else {
+                                showInfoDialog(info,showProgressOrNotify,isWifiConnected);
+                            }
+                        }
                     }
                 }else {//不是wifi
                     if(showAskDownload){
                         showInfoDialog(info,showProgressOrNotify,isWifiConnected);
+                    }else {
+                        //非wifi下不会自动下载
                     }
                 }
-
-
-
             }
 
             @Override
             public void onError(String msgCanShow) {
                 super.onError(msgCanShow);
-                if(!showLoadingInfo)
+                if(showLoadingInfo)
                 toast(msgCanShow);
             }
         });
@@ -159,7 +166,7 @@ public class ApkUpdater<T> {
 
     }
 
-    private  void showInfoDialog(final UpdateInfo bean, final boolean showProgressOrNotify, boolean isWifiConnected) {
+    private  void showInfoDialog(final UpdateInfo bean, final boolean showProgressOrNotify, final boolean isWifiConnected) {
         String title = TextUtils.isEmpty(bean.title) ? "检测到新版本:"+bean.versionName:bean.title;
         StringBuilder builder = new StringBuilder()
                 .append("\n");
@@ -195,11 +202,16 @@ public class ApkUpdater<T> {
 
           @Override
           public void onThird() {
-              toSettings();
+              if(isWifiConnected){
+                  ignoreVersion(bean.versionCode);
+              }else {
+                  toSettings();
+              }
+
           }
       });
         if(isWifiConnected){
-            configBean.setBtnText("下载安装","取消","");
+            configBean.setBtnText("下载安装","取消","忽略此版本");
         }else {
             configBean.setBtnText("下载安装","取消","去开启wifi");
         }
@@ -208,6 +220,17 @@ public class ApkUpdater<T> {
 
 
 
+    }
+
+    private void ignoreVersion(int versionCode) {
+        SharedPreferences sp = context.getSharedPreferences(CONFIG_FILE, Context.MODE_PRIVATE);
+        sp.edit().putInt(VERSIONCODE, versionCode).apply();//提交保存键值对
+    }
+
+    private boolean hasIgnored(int versionCode){
+        SharedPreferences sp = context.getSharedPreferences(CONFIG_FILE, Context.MODE_PRIVATE);
+       int code =  sp.getInt(VERSIONCODE, 0);
+        return code==versionCode;
     }
 
     private void toSettings() {
