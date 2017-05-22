@@ -39,11 +39,10 @@ public class ApkUpdater<T> {
     }
 
 
-    public     void init(Context context,String url,Class<T> updateBean,ObjectCopyable<T> copyable){
+    public  void init(Context context,String url,Class<T> updateBean,ObjectCopyable<T> copyable){
         if(HttpUtil.context == null){
             HttpUtil.init(context,"http://api.qxinli.com/");
             HttpUtil.context = context;
-
         }
         StyledDialog.init(context);
         this.context =  context;
@@ -100,9 +99,15 @@ public class ApkUpdater<T> {
         return false;
     }
 
-    public   void update(final boolean quitely){
+    /**
+     *
+     * @param showLoadingInfo 是否显示"正在获取更新信息"
+     * @param showAskDownload 是否询问用户"是否下载安装",如果为false,则直接下载
+     * @param showProgressOrNotify  true:显示下载进度dialog,  false: 下载进度:显示notification
+     */
+    public   void update(final boolean showLoadingInfo, final boolean showAskDownload, final boolean showProgressOrNotify){
       JsonRequestBuilder builder =  HttpUtil.buildJsonRequest(url,updateBean);
-        if(!quitely){
+        if(showLoadingInfo){
             builder.showLoadingDialog("获取更新信息");
         }
 
@@ -116,7 +121,7 @@ public class ApkUpdater<T> {
 
                 int versionCode = getAPPVersionCodeFromAPP(context);
                 if(versionCode >=info.versionCode){
-                    if(!quitely){
+                    if(!showLoadingInfo){
                         toast("已经是最新版本");
                     }
                     return;
@@ -128,14 +133,14 @@ public class ApkUpdater<T> {
 
 
                 if(isWifiConnected){
-                    if( info.isForceUpdate){
-                        download(info,quitely);
+                    if( info.isForceUpdate || !showAskDownload){
+                        download(info,showProgressOrNotify);
                     }else {
-                        showInfoDialog(info,quitely,isWifiConnected);
+                        showInfoDialog(info,showProgressOrNotify,isWifiConnected);
                     }
                 }else {//不是wifi
-                    if(!quitely){
-                        showInfoDialog(info,quitely,isWifiConnected);
+                    if(showAskDownload){
+                        showInfoDialog(info,showProgressOrNotify,isWifiConnected);
                     }
                 }
 
@@ -146,6 +151,7 @@ public class ApkUpdater<T> {
             @Override
             public void onError(String msgCanShow) {
                 super.onError(msgCanShow);
+                if(!showLoadingInfo)
                 toast(msgCanShow);
             }
         });
@@ -153,7 +159,7 @@ public class ApkUpdater<T> {
 
     }
 
-    private  void showInfoDialog(final UpdateInfo bean, final boolean quitely, boolean isWifiConnected) {
+    private  void showInfoDialog(final UpdateInfo bean, final boolean showProgressOrNotify, boolean isWifiConnected) {
         String title = TextUtils.isEmpty(bean.title) ? "检测到新版本:"+bean.versionName:bean.title;
         StringBuilder builder = new StringBuilder()
                 .append("\n");
@@ -179,7 +185,7 @@ public class ApkUpdater<T> {
       ConfigBean configBean =  StyledDialog.buildMdAlert( title, builder.toString(), new MyDialogListener() {
             @Override
             public void onFirst() {
-                download(bean,quitely);
+                download(bean,showProgressOrNotify);
             }
 
             @Override
@@ -211,18 +217,19 @@ public class ApkUpdater<T> {
     }
 
 
-    private   void download(UpdateInfo bean, boolean quitely) {
+    private   void download(UpdateInfo bean, final boolean showProgressOrNotify) {
        DownloadBuilder builder =  HttpUtil.buildDownloadRequest(bean.downloadUrl);
         if(!TextUtils.isEmpty(bean.md5)){
             builder.verifyMd5(bean.md5);
         }
-        if(!quitely){
+        if(showProgressOrNotify){
             builder.showLoadingDialog();
         }
             builder.setOpenAfterSuccess()
                     .getAsync(new MyNetListener() {
                         @Override
                         public void onSuccess(Object o, String s,boolean iscache) {
+                            if(showProgressOrNotify)
                             toast("下载完成");
 
                         }
@@ -230,6 +237,7 @@ public class ApkUpdater<T> {
                         @Override
                         public void onError(String msgCanShow) {
                             super.onError(msgCanShow);
+                            if(showProgressOrNotify)
                             toast(msgCanShow);
                         }
                     });

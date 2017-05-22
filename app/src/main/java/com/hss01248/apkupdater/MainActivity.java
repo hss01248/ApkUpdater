@@ -16,7 +16,7 @@ public class MainActivity extends Activity {
 
     private void update() {
 
-        ApkUpdater.getInstance().update(false);
+        ApkUpdater.getInstance().update(false,true,true);
     }
 
     @Override
