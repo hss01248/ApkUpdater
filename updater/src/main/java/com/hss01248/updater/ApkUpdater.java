@@ -134,7 +134,7 @@ public class ApkUpdater<T> {
 
                 if(isWifiConnected){
                     if( info.isForceUpdate || !showAskDownload){
-                        download(info,showProgressOrNotify);
+                        download(info,false);
                     }else {
                         showInfoDialog(info,showProgressOrNotify,isWifiConnected);
                     }
