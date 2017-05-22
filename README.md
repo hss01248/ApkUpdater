@@ -107,39 +107,39 @@ registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
 
 
 
-## 手动点击"检查更新"
+
 
 > 不要在activity的onstart中调用,不要在application的oncreate中调用
 
 ```
-ApkUpdater.getInstance().update(false);
+/**
+     *
+     * @param showLoadingInfo 是否显示"正在获取更新信息"
+     * @param showAskDownload 是否询问用户"是否下载安装",如果为false,则直接下载
+     * @param showProgressOrNotify  true:显示下载进度dialog,  false: 下载进度:显示notification
+     */
+    public   void update(final boolean showLoadingInfo, final boolean showAskDownload, final boolean showProgressOrNotify)
 ```
 
-检测更新信息时弹出"loading"对话框
+检测更新信息时弹出"loading"对话框-可以控制显示或不显示
 
 检查到有更新时:
 
-弹出更新的信息对话框,选择是否更新.如果不是wifi,有相关提示信息
+弹出更新的信息对话框,选择是否更新.如果不是wifi,有相关提示信息   --可以选择是否弹出
 
-弹出进度对话框显示下载进度
+弹出进度对话框显示下载进度 --可以选择是dialog还是notification的形式
 
 下载完成后弹出apk安装界面
 
-## 进入首页时"偷偷"拉取更新信息
+## 常用场景
+* splash或mainactivity界面,偷偷检查是否有更新,如果有,弹出提示,让用户选择是否更新:
+update(false,true,true)
+* 手动点击按钮"检查更新": update(true,true,true)
+* 强制更新: 服务器下发的 info.isForceUpdate算得为true时,即可强制更新
 
-```
-ApkUpdater.getInstance().update(true);
-```
 
-静默检测更新信息.
 
-检查到有更新时:
 
-如果不是wifi,不下载.
-
-如果是wifi,如果服务器没有要求强制更新,则弹出对话框,让用户选择是否更新,后续同上面手动点击.
-
-如果服务器要求强制更新,则"偷偷"下载,下载完后直接弹出apk安装界面.
 
 
 
