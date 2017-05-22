@@ -28,7 +28,7 @@ Add it in your root build.gradle at the end of repositories:
 
 ```
     dependencies {
-            compile 'com.github.hss01248:ApkUpdater:1.0.1'
+            compile 'com.github.hss01248:ApkUpdater:1.0.4'
     }
 ```
 
@@ -133,7 +133,7 @@ registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
 
 ## 常用场景
 * splash或mainactivity界面,偷偷检查是否有更新,如果有,弹出提示,让用户选择是否更新:
-update(false,true,true)
+  update(false,true,true)
 * 手动点击按钮"检查更新": update(true,true,true)
 * 强制更新: 服务器下发的 info.isForceUpdate算得为true时,即可强制更新
 
@@ -146,6 +146,8 @@ update(false,true,true)
 # UI
 
 > 下图按钮颜色暂时写死成ios蓝
+
+ ![wifi](img\wifi.jpg)
 
  ![nowifi](img/nowifi.jpg)
 
