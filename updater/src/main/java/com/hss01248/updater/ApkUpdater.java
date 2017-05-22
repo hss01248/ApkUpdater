@@ -2,12 +2,14 @@ package com.hss01248.updater;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.support.annotation.Nullable;
+import android.provider.Settings;
 import android.text.TextUtils;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.hss01248.dialog.StyledDialog;
@@ -15,8 +17,8 @@ import com.hss01248.dialog.config.ConfigBean;
 import com.hss01248.dialog.interfaces.MyDialogListener;
 import com.hss01248.net.builder.DownloadBuilder;
 import com.hss01248.net.builder.JsonRequestBuilder;
-import com.hss01248.net.wrapper.MyNetApi;
-import com.hss01248.net.wrapper.MyNetApi2;
+import com.hss01248.net.util.MyActyManager;
+import com.hss01248.net.wrapper.HttpUtil;
 import com.hss01248.net.wrapper.MyNetListener;
 
 /**
@@ -30,10 +32,17 @@ public class ApkUpdater<T> {
     private  ObjectCopyable<T> copyable;
     private  Class<T> updateBean;
     private static ApkUpdater instance;
+
+    public static void onActivityResumed(Activity activity){
+        MyActyManager.getInstance().setCurrentActivity(activity);
+        com.hss01248.dialog.MyActyManager.getInstance().setCurrentActivity(activity);
+    }
+
+
     public     void init(Context context,String url,Class<T> updateBean,ObjectCopyable<T> copyable){
-        if(MyNetApi2.context == null){
-            MyNetApi2.init(context,"http://api.qxinli.com/",null);
-            MyNetApi.context = context;
+        if(HttpUtil.context == null){
+            HttpUtil.init(context,"http://api.qxinli.com/");
+            HttpUtil.context = context;
 
         }
         StyledDialog.init(context);
@@ -85,23 +94,23 @@ public class ApkUpdater<T> {
             NetworkInfo mWiFiNetworkInfo = mConnectivityManager
                     .getNetworkInfo(ConnectivityManager.TYPE_WIFI);
             if (mWiFiNetworkInfo != null) {
-                return mWiFiNetworkInfo.isAvailable();
+                return mWiFiNetworkInfo.isConnected();
             }
         }
         return false;
     }
 
-    public   void update(final boolean quitely, @Nullable final Activity activity){
-      JsonRequestBuilder builder =  MyNetApi2.buildJsonRequest(url,updateBean);
+    public   void update(final boolean quitely){
+      JsonRequestBuilder builder =  HttpUtil.buildJsonRequest(url,updateBean);
         if(!quitely){
-            builder.showLoadingDialog(activity,"获取更新信息");
+            builder.showLoadingDialog("获取更新信息");
         }
 
-        builder.callback(new MyNetListener<T>() {
+        builder.getAsync(new MyNetListener<T>() {
 
 
             @Override
-            public void onSuccess(T bean, String s) {
+            public void onSuccess(T bean, String s,boolean iscache) {
                 StyledDialog.dismissLoading();
                 UpdateInfo info = copyable.copyValues(bean);
 
@@ -115,16 +124,18 @@ public class ApkUpdater<T> {
                 //有新版本
                 boolean isWifiConnected = isWifiConnected(context);
 
+                Log.e("dd","是不是wifi:"+isWifiConnected);
+
 
                 if(isWifiConnected){
                     if( info.isForceUpdate){
-                        download(info,quitely,activity);
+                        download(info,quitely);
                     }else {
-                        showInfoDialog(info,quitely,isWifiConnected,activity);
+                        showInfoDialog(info,quitely,isWifiConnected);
                     }
                 }else {//不是wifi
                     if(!quitely){
-                        showInfoDialog(info,quitely,isWifiConnected,activity);
+                        showInfoDialog(info,quitely,isWifiConnected);
                     }
                 }
 
@@ -135,15 +146,14 @@ public class ApkUpdater<T> {
             @Override
             public void onError(String msgCanShow) {
                 super.onError(msgCanShow);
-                StyledDialog.dismissLoading();
                 toast(msgCanShow);
             }
-        }).get();
+        });
 
 
     }
 
-    private  void showInfoDialog(final UpdateInfo bean, final boolean quitely, boolean isWifiConnected, final Activity activity) {
+    private  void showInfoDialog(final UpdateInfo bean, final boolean quitely, boolean isWifiConnected) {
         String title = TextUtils.isEmpty(bean.title) ? "检测到新版本:"+bean.versionName:bean.title;
         StringBuilder builder = new StringBuilder()
                 .append("\n");
@@ -158,28 +168,22 @@ public class ApkUpdater<T> {
                     .append("\n");
         }
 
+        builder.append(bean.dec).append("\n\n");
+
         if(!isWifiConnected){
-            builder.append("注意:当前不是wifi环境,您可以去切换到wifi或者直接下载")
-                    .append("\n");
+            builder.append("注意:当前不是wifi环境,您可以去切换到wifi或者直接下载");
         }
 
 
-        builder.append(bean.dec);
-        Context context1 = context;
-        if(activity != null ){
-            context1 = activity;
-        }
 
-
-      ConfigBean configBean =  StyledDialog.buildMdAlert(activity, title, builder.toString(), new MyDialogListener() {
+      ConfigBean configBean =  StyledDialog.buildMdAlert( title, builder.toString(), new MyDialogListener() {
             @Override
             public void onFirst() {
-                download(bean,quitely, activity);
+                download(bean,quitely);
             }
 
             @Override
             public void onSecond() {
-
 
             }
 
@@ -189,9 +193,9 @@ public class ApkUpdater<T> {
           }
       });
         if(isWifiConnected){
-            configBean.setBtnText("确定","取消","");
+            configBean.setBtnText("下载安装","取消","");
         }else {
-            configBean.setBtnText("确定","取消","去开启wifi");
+            configBean.setBtnText("下载安装","取消","去开启wifi");
         }
 
         configBean.show();
@@ -201,21 +205,24 @@ public class ApkUpdater<T> {
     }
 
     private void toSettings() {
-
+        Intent intent = new Intent(Settings.ACTION_SETTINGS);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent);
     }
 
-    private   void download(UpdateInfo bean, boolean quitely, Activity activity) {
-       DownloadBuilder builder =  MyNetApi2.buildDownloadRequest(bean.downloadUrl);
+
+    private   void download(UpdateInfo bean, boolean quitely) {
+       DownloadBuilder builder =  HttpUtil.buildDownloadRequest(bean.downloadUrl);
         if(!TextUtils.isEmpty(bean.md5)){
             builder.verifyMd5(bean.md5);
         }
         if(!quitely){
-            builder.showLoadingDialog(activity);
+            builder.showLoadingDialog();
         }
             builder.setOpenAfterSuccess()
-                    .callback(new MyNetListener() {
+                    .getAsync(new MyNetListener() {
                         @Override
-                        public void onSuccess(Object o, String s) {
+                        public void onSuccess(Object o, String s,boolean iscache) {
                             toast("下载完成");
 
                         }
@@ -225,8 +232,8 @@ public class ApkUpdater<T> {
                             super.onError(msgCanShow);
                             toast(msgCanShow);
                         }
-                    })
-                    .get();
+                    });
+
 
     }
 
