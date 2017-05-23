@@ -147,7 +147,7 @@ registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
 
 > 下图按钮颜色暂时写死成ios蓝
 
- ![wifi](img\wifi.jpg)
+ ![wifi](img/wifi.jpg)
 
  ![nowifi](img/nowifi.jpg)
 
