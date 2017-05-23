@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="openuri-2.1.9">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/updater/build/intermediates/exploded-aar/com.github.hss01248.HttpUtilForAndroid/openuri/2.1.9/jars/classes.jar!/" />
+      <root url="file://$PROJECT_DIR$/updater/build/intermediates/exploded-aar/com.github.hss01248.HttpUtilForAndroid/openuri/2.1.9/res" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

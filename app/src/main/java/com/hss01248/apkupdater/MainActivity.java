@@ -18,11 +18,9 @@ public class MainActivity extends Activity {
                 ApkUpdater.getInstance().update(true,true,true);
             }
         });
-
     }
 
     private void update() {
-
         ApkUpdater.getInstance().update(false,true,true);
     }
 

@@ -18,7 +18,7 @@ public class BaseApp extends Application {
     public void onCreate() {
         super.onCreate();
         ApkUpdater.getInstance()
-                .init(this, "http://api.qxinli.com:9001/api/version/latestVersion/v1.json", UpdateModel.class,
+                .init(this, false,"http://api.qxinli.com:9001/api/version/latestVersion/v1.json", UpdateModel.class,
                         new ApkUpdater.ObjectCopyable<UpdateModel>() {
                             @Override
                             public UpdateInfo copyValues(UpdateModel obj) {

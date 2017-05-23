@@ -34,6 +34,7 @@ public class ApkUpdater<T> {
     private  ObjectCopyable<T> copyable;
     private  Class<T> updateBean;
     private static ApkUpdater instance;
+    private  boolean showIgnore;
 
     public static void onActivityResumed(Activity activity){
         MyActyManager.getInstance().setCurrentActivity(activity);
@@ -41,13 +42,14 @@ public class ApkUpdater<T> {
     }
 
 
-    public  void init(Context context,String url,Class<T> updateBean,ObjectCopyable<T> copyable){
+    public  void init(Context context,boolean showIgnore,String url,Class<T> updateBean,ObjectCopyable<T> copyable){
         if(HttpUtil.context == null){
             HttpUtil.init(context,"http://api.qxinli.com/");
             HttpUtil.context = context;
         }
         StyledDialog.init(context);
         this.context =  context;
+        this.showIgnore = showIgnore;
         this.url = url;
         this.copyable = copyable;
         this.updateBean = updateBean;
@@ -125,7 +127,7 @@ public class ApkUpdater<T> {
                     }
                     return;
                 }
-                if(!showLoadingInfo && hasIgnored(info.versionCode)){
+                if(!showLoadingInfo && showIgnore && hasIgnored(info.versionCode)){
                     //非手动点击,并且已经忽略此版本,则不再有任何提示
                     return;
                 }
@@ -203,6 +205,7 @@ public class ApkUpdater<T> {
           @Override
           public void onThird() {
               if(isWifiConnected){
+                  if(showIgnore)
                   ignoreVersion(bean.versionCode);
               }else {
                   toSettings();
@@ -211,7 +214,12 @@ public class ApkUpdater<T> {
           }
       });
         if(isWifiConnected){
-            configBean.setBtnText("下载安装","取消","忽略此版本");
+            if(showIgnore){
+                configBean.setBtnText("下载安装","取消","忽略此版本");
+            }else {
+                configBean.setBtnText("下载安装","取消","");
+            }
+
         }else {
             configBean.setBtnText("下载安装","取消","去开启wifi");
         }
