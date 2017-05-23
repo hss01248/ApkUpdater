@@ -30,5 +30,5 @@ dependencies {
     testCompile 'junit:junit:4.12'
 
     compile 'com.github.hss01248:DialogUtil:1.1.4'//对话框
-    compile 'com.github.hss01248.HttpUtilForAndroid:HttpUtil:2.2.1'
+    compile 'com.github.hss01248.HttpUtilForAndroid:HttpUtil:2.2.2'
 }
