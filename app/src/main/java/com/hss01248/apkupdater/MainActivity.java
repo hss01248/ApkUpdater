@@ -18,15 +18,19 @@ public class MainActivity extends Activity {
                 ApkUpdater.getInstance().update(true,true,true);
             }
         });
+        PermissionUtils.askExternalStorage(null);
+
+
     }
 
     private void update() {
-        ApkUpdater.getInstance().update(false,true,true);
+        ApkUpdater.getInstance().update(false,false,false);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+
         update();
     }
 }

@@ -2,6 +2,7 @@ package com.hss01248.apkupdater;
 
 import android.app.Activity;
 import android.app.Application;
+import android.content.Context;
 import android.os.Bundle;
 import android.widget.Toast;
 
@@ -13,10 +14,12 @@ import com.hss01248.updater.UpdateInfo;
  */
 
 public class BaseApp extends Application {
+    public static Context context;
 
     @Override
     public void onCreate() {
         super.onCreate();
+        context = this;
         ApkUpdater.getInstance()
                 .init(this, false,"http://api.qxinli.com:9001/api/version/latestVersion/v1.json", UpdateModel.class,
                         new ApkUpdater.ObjectCopyable<UpdateModel>() {
